@@ -1,0 +1,756 @@
+;; The first three lines of this file were inserted by DrRacket. They record metadata
+;; about the language level of this file in a form that our tools can easily process.
+#reader(lib "htdp-advanced-reader.ss" "lang")((modname Battleship) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #t #t none #f ())))
+(require "battle-ship-GUI.rkt")
+
+(require 2htdp/image)
+(require 2htdp/universe)
+
+
+
+
+;;----------[DATA DEFINITIONS]----------------------;;
+
+
+
+
+;; a coordinate is a 2 character alpha-numeric pair containing one capital letter and a number
+;; -- All cominations of the letters A-H and numbers 1-8 
+;; -- example: "A1" or "C7"
+;; -- range: "A1" - "H8"
+
+
+;; a list of coordinate LoC is either
+;; -- empty
+;; -- (cons coordinate LoC)
+
+
+;; a Patrol is a struct
+(define-struct Patrol (coordinates))
+;; interp of fields
+;;  coordinates [listof coordinate]: the coordinates that the ship takes up (max-length: 2)
+;; make-Patrol: [listof coordinate] -> Patrol
+(define EX-PATROL1 (make-Patrol (list "A1" "A2")))
+(define EX-PATROL2 (make-Patrol (list "B1" "B2")))
+#|
+(define (Patrol-fun aShip)
+     ...(Patrol-coordinates)...) ; [listof coordinate]
+)
+|#
+
+
+;; a Sub is a struct
+(define-struct Sub (coordinates))
+;; interp of fields
+;;  coordinates [listof coordinate]: the coordinates that the ship takes up (max-length: 3)
+;; make-Sub: [listof coordinate] -> Sub 
+(define EX-SUB1 (make-Sub (list "C1" "C2" "C3")))
+#|
+(define (Sub-fun aShip)
+     ...(Sub-coordinates)...) ; [listof coordinate]
+)
+|#
+
+
+;; a Destroyer is a struct
+(define-struct Destroyer (coordinates))
+;; interp of fields
+;;  coordinates [listof coordinate]: the coordinates that the ship takes up (max-length: 3)
+;; make-Destroyer: [listof coordinate] -> Destroyer
+(define EX-DESTROYER1 (make-Destroyer (list "D1" "D2" "D3")))
+#|
+(define (Destroyer-fun aDestroyer)
+     ...(Destroyer-coordinates)...) ; [listof coordinate]
+)
+|#
+
+
+;; a BattleShip is a struct
+(define-struct Battleship (coordinates))
+;; interp of fields
+;;  coordinates [listof coordinate]: the coordinates that the ship takes up (max-length: 4)
+;; make-Battleship: [listof coordinate] -> Battleship
+(define EX-BATTLESHIP1 (make-Battleship (list "E1" "E2" "E3" "E4")))
+#|
+(define (Battleship-fun aBattleship)
+     ...(Battleship-coordinates)...) ; [listof coordinate]
+)
+|#
+
+
+;; a Aircraft-Car is a struct
+(define-struct Aircraft-Car (coordinates))
+;; interp of fields
+;;  coordinates [listof coordinate]: the coordinates that the ship takes up (max-length: 5)
+;; make-Aircraft-Car: [listof coordinate] -> Aircraft-Car
+(define EX-AIRCRAFT-CAR1 (make-Aircraft-Car (list "F1" "F2" "F3" "F4" "F5")))
+#|
+(define (Aircraft-Car-fun aBattleship)
+     ...(Aircraft-Car-coordinates)...) ; [listof coordinate]
+)
+|#
+
+
+;; a Ship is either
+;; -- Sub
+;; -- Patrol
+;; -- Destroyer
+;; -- Battleship
+;; -- Aircraft-Car
+#|
+(define (Ship-fun aShip)
+  (cond [(Patrol? aShip) ...]
+        [(Sub? aShip) ...]
+        [(Destroyer? aShip) ...]
+        [(Battleship? aShip) ...]
+        [(Aircraft-Car? aShip) ...])
+)
+|#
+
+
+;; a list of ship LoS is either
+;; -- empty
+;; -- (cons ship LoS)
+(define A-SHIPS (list EX-AIRCRAFT-CAR1 EX-BATTLESHIP1 EX-DESTROYER1 EX-SUB1 EX-SUB1 EX-PATROL1 EX-PATROL1 EX-PATROL1))
+#|
+(define (LoS-fun aLoS)
+  (cond [(empty? aLoS) ... ]
+        [(cons? aLoS) 
+           (first aLoS)
+           (LoS-fun (rest aLoS))])
+)
+|#
+
+
+;; a player is a struct
+(define-struct Player (ships unplaced-ships ship-selection hits misses))
+;; interp of fields
+;;  ships [listof Ship]: List of the players in-game ships
+;;  unplaced-ships [listof Ship]: List of the players remaining ships for placing
+;;  ship-selection [Ship]: The current selected ship for placing
+;;  hits [listof coordinate]: List of Corrdinates that were successful hits on the opponent's ships
+;;  misses [listof coordinate]: List of coordinates that were missed shots at opponent's ships
+;; make-Player: [listof Ship] [listof coordinate] [listof coordinate] -> Player
+(define EX-PLAYER1 (make-Player (list EX-SUB1) empty EX-SUB1 (list "H8") (list "F8")))
+(define EX-PLAYER2 (make-Player (list EX-SUB1) empty EX-SUB1 empty empty))
+(define PLAYER1 (make-Player empty A-SHIPS EX-SUB1 empty empty))
+(define PLAYER2 (make-Player empty A-SHIPS EX-SUB1 empty empty))
+#|
+(define (Player-fun aPlayer)
+     ...(Player-ships aPlayer)... ; [listof Ship]
+     ...(Player-hits aPlayer)... ; [listof coordinate]
+     ...(Player-misses aPlayer)... ; [listof coordinate]
+)
+|#
+
+;; a list of player LoP is either
+;; -- empty
+;; -- (cons Player LoP)
+
+
+;; a binary-number is either
+;; --0
+;; --1
+
+;; a World is a struct
+(define-struct World (player-turn players))
+;; interp of fields
+;;  player-turn [binary-number]: indicates which players turn it is 0 or 1
+;;  players [listof Player]: a list of length 2 containing 2 players
+;; make-World: binary-number [listof Player] -> World
+(define EX-WORLD1 (make-World 0 (list EX-PLAYER1 EX-PLAYER2)))
+(define GAME-WORLD (make-World 0 (list PLAYER1 PLAYER2)))
+(define GAME-WORLD2 (make-World 0 (list PLAYER1 (make-Player empty empty EX-SUB1 empty empty))))
+#|
+(define (World-fun aWorld)
+     ...(World-player-turn aWorld)...) ; binary-number
+     ...(World-players aWorld)...) ; [listof Player]
+)
+|#
+
+
+
+;;-----------------------[CONSTANTS]---------------------------
+
+
+(define GAME-GUI BATTLESHIP-GUI)
+(define PLACE-BOX ST-SIZE-3)
+
+
+
+
+;;------------------------[FUNCTIONS]--------------------------
+
+
+;; game-begin?: [listof Ship] [listof Ship] -> boolean
+;; Consumes: two [listof Ship]
+;; Produces: true if both lists are empty, false otherwise
+(define (game-begin? aLoS1 aLoS2)
+  (and (empty? aLoS1) (empty? aLoS2)))
+
+(check-expect (game-begin? (list EX-DESTROYER1 EX-SUB1) empty) false)
+(check-expect (game-begin? empty empty) true)
+(check-expect (game-begin? (list EX-DESTROYER1 EX-SUB1) (list EX-DESTROYER1 EX-SUB1)) false)
+
+
+;; get-coordinates: Ship -> [listof Coordinate]
+;; Consumes: a Ship
+;; Produces: the [listof Coordinate] of the ship
+(define (get-coordinates aShip)
+  (cond [(Patrol? aShip) (Patrol-coordinates aShip)]
+        [(Sub? aShip) (Sub-coordinates aShip)]
+        [(Destroyer? aShip) (Destroyer-coordinates aShip)]
+        [(Battleship? aShip) (Battleship-coordinates aShip)]
+        [(Aircraft-Car? aShip) (Aircraft-Car-coordinates aShip)]))
+
+(check-expect (get-coordinates EX-PATROL1) (list "A1" "A2"))
+(check-expect (get-coordinates EX-SUB1) (list "C1" "C2" "C3"))
+(check-expect (get-coordinates EX-DESTROYER1) (list "D1" "D2" "D3"))
+(check-expect (get-coordinates EX-BATTLESHIP1) (list "E1" "E2" "E3" "E4"))
+(check-expect (get-coordinates EX-AIRCRAFT-CAR1) (list "F1" "F2" "F3" "F4" "F5"))
+
+
+;; getall-coords: Player -> [llistof Coordinate]
+;; Consumes: a player
+;; Produces: a [listof Coordinate] containing the coordinates of all the ships
+(define (getall-coords aPlayer)
+    (foldr (lambda (x list) (append (get-coordinates x) list)) empty (Player-ships aPlayer)))
+
+(check-expect (getall-coords (make-Player (list EX-SUB1 EX-DESTROYER1) empty EX-DESTROYER1 empty empty))
+              (list "C1" "C2" "C3" "D1" "D2" "D3"))
+
+;; can-place?: Player -> boolean
+;; consumes: aPlayer
+;; Produces: true if the player may place a ship
+(define (can-place? aPlayer)
+  (local[(define prex (getall-coords aPlayer))
+         (define (helper acoord)
+           (ormap (lambda (x) (string=? acoord x)) prex))]
+    
+    (cond[(ormap helper (determine-coordinates)) false]
+         [else true])))
+                            
+              
+
+
+;; hit?: Coordinate [listof Ship] -> boolean
+;; Consumes: a coordinate and a [listof Ship]
+;; Produces: true if the given coordinate matches any of the coordinates of any of the ships
+;;           false otherwise
+(define (hit? aCoord aLoS)          
+  (ormap (lambda (aship) (ormap (lambda (aCoord1) (string=? aCoord aCoord1)) (get-coordinates aship))) aLoS))
+
+(check-expect (hit? "H8" (list EX-PATROL1 EX-PATROL1 EX-BATTLESHIP1)) false)
+(check-expect (hit? "A1" (list EX-PATROL1 EX-PATROL1 EX-BATTLESHIP1)) true)
+
+
+;; damage-ship: Coordinate [listof Ship] -> [listof Ship]
+;; Consumes: a coordinate and a [listof Ship]
+;; Produces: [listof Ship] with the coordinate of the hit ship removed
+(define (damage-ship aCoord aLoS)
+  (local[(define (damage aShip)
+           (cond
+             [(Patrol? aShip) 
+              (make-Patrol (filter (lambda (x) (not (string=? aCoord x))) (Patrol-coordinates aShip)))]
+             [(Sub? aShip) 
+              (make-Sub (filter (lambda (x) (not (string=? aCoord x))) (Sub-coordinates aShip)))]
+             [(Destroyer? aShip) 
+              (make-Destroyer (filter (lambda (x) (not (string=? aCoord x))) (Destroyer-coordinates aShip)))]
+             [(Battleship? aShip)
+              (make-Battleship (filter (lambda (x) (not (string=? aCoord x))) (Battleship-coordinates aShip)))]
+             [(Aircraft-Car? aShip) 
+              (make-Aircraft-Car (filter (lambda (x) (not (string=? aCoord x))) (Aircraft-Car-coordinates aShip)))]))]              
+    (map damage aLoS)))
+
+
+(check-expect (get-coordinates (first (damage-ship "A1" (list EX-PATROL1 
+                                                              EX-SUB1
+                                                              EX-DESTROYER1
+                                                              EX-BATTLESHIP1
+                                                              EX-AIRCRAFT-CAR1)))) 
+              (list "A2"))
+(check-expect (get-coordinates (first (damage-ship "H8" (list EX-PATROL1 EX-PATROL1 EX-BATTLESHIP1)))) (list "A1" "A2"))
+  
+
+;; sunk?: Ship -> boolean
+;; Consumes: a Ship
+;; Produces: true if the ship's [listof Coordinate] is empty
+;;           false otherwise
+(define (sunk? aShip)
+  (empty? (get-coordinates aShip)))
+
+(check-expect (sunk? (make-Sub empty)) true)
+(check-expect (sunk? EX-SUB1) false)
+
+
+;; remove-ship: Player -> [listof Ship]
+;; Consumes: a Ship and a [listof Ship]
+;; Produces: a [listof Ship] with one elemt of that type removed
+(define (remove-ship aPlayer)
+  (local[(define count 0)
+         (define (helper ship1 list)
+           (cond[(and (equal? (Player-ship-selection aPlayer) ship1)(= 0 count))
+                 (begin
+                   (set! count 1)
+                   list)]
+                [else
+                 (cons ship1 list)]))]
+    (foldr helper empty (Player-unplaced-ships aPlayer))))
+
+(check-expect (remove-ship (make-Player empty
+                                        (list EX-PATROL1 EX-PATROL2 EX-SUB1 EX-SUB1)
+                                        EX-SUB1
+                                        empty
+                                        empty)) (list EX-PATROL1 EX-PATROL2 EX-SUB1))
+
+;; ships-left?: Player -> boolean
+;; Consumes: a Player
+;; Produces: true if the player can place a Ship
+;;           false otherwise
+(define (ships-left? aPlayer)
+  (local[(define select (Player-ship-selection aPlayer))]
+    (cond [(and (Patrol? select) (> (patrol-count (Player-unplaced-ships aPlayer)) 0)) true]
+          [(and (Sub? select) (> (sub-count (Player-unplaced-ships aPlayer)) 0)) true]
+          [(and (Destroyer? select) (> (destroyer-count (Player-unplaced-ships aPlayer)) 0)) true]
+          [(and (Battleship? select) (> (battleship-count (Player-unplaced-ships aPlayer)) 0)) true]
+          [(and (Aircraft-Car? select) (> (aircraft-count (Player-unplaced-ships aPlayer)) 0)) true]
+          [else false])))
+    
+
+                
+
+
+
+;; do-until: (none -> boolean) (none -> void) (none -> X) -> X
+;; while (P?) is false, do (BODY), finally return (RESULT)
+;;   P? (none -> boolean) : predicate that when true will cause loop to stop and return (RESULT).
+;;   BODY (none -> void)  : a mutating function that is called once every time P? is evaluated
+;;   RESULT (none -> X)   : a function that is called ONCE, when the P? is true, and returns the desired result
+;; NOTE HOW LITTLE HELP THE SIGNATURE GIVES YOU!!!!!
+(define (do-until P? BODY RESULT)
+  (if (P?)
+      (RESULT)
+      (begin
+        (BODY)
+        (do-until P? BODY RESULT))))
+
+
+
+;;------------------------[SHIP PLACEMENT KAYHANDLER]--------------------------
+
+
+
+;; determine-columns: nothing -> [listof String]
+;; Consumes: nothing
+;; Produces: a [listof String] containing all the columns that the ship will take up
+(define (determine-columns)
+  (local[(define x (+ PLACE-X (image-width PLACE-BOX)))
+         (define interval 205)
+         (define index 0)
+         (define cols empty)
+         (define letters (list "A" "B" "C" "D" "E" "F" "G" "H"))
+         (define (addletter)
+           (cond [(> x interval)
+                   (set! cols (cons (list-ref letters index) cols))
+                   ]
+                 [else void]))
+         (define (P?)
+           (or (>= index (length letters))
+                (>= interval 605)))
+         (define (BODY)
+           (begin
+             (addletter)
+             (set! interval (+ 50 interval))
+             (set! index (add1 index))
+           ))
+         (define (RESULT)
+           cols)]
+    (do-until P? BODY RESULT)))
+
+
+
+;; determine-rows: nothing -> [listof String]
+;; Consumes: nothing
+;; Produces: a [listof String] containing all the rows that the ship will take up
+(define (determine-rows)
+  (local[(define y (+ PLACE-Y (image-height PLACE-BOX)))
+         (define interval 62)
+         (define index 0)
+         (define rows empty)
+         (define numbers (list "1" "2" "3" "4" "5" "6" "7" "8"))
+         (define (addnumber)
+           (cond [(> y interval)
+                   (set! rows (cons (list-ref numbers index) rows))
+                   ]
+                 [else void]))
+         (define (P?)
+           (or (>= index (length numbers))
+                (>= interval 462)))
+         (define (BODY)
+           (begin
+             (addnumber)
+             (set! interval (+ 50 interval))
+             (set! index (add1 index))
+           ))
+         (define (RESULT)
+           rows)]
+    (do-until P? BODY RESULT)))
+    
+
+;; determine-coordinates: nothing -> [listof Coordinate]
+;; Consumes: nothing
+;; Produces: a [listof Coordinate] for a new ship
+(define (determine-coordinates)
+  (local[(define rows (determine-rows))
+         (define columns (determine-columns))]
+    (cond[(= 1 (length rows))
+          (map (lambda (X) (string-append X (first rows))) columns)]
+         [else
+          (map (lambda (X) (string-append (first columns) X)) rows)])))
+
+(check-expect (determine-coordinates) (list "A3" "A2" "A1"))
+
+
+;; get-shipimage: aWorld -> image
+;; Consumes: a World
+;; Produces: an image of the ship that matches the current player's selection
+(define (get-shipimage aWorld)
+  (cond [(> (image-height PLACE-BOX) (image-width PLACE-BOX))
+         (cond[(Patrol? (Player-ship-selection (first (World-players aWorld)))) PATROL-I]
+              [(Sub? (Player-ship-selection (first (World-players aWorld)))) SUB-I]
+              [(Destroyer? (Player-ship-selection (first (World-players aWorld)))) DESTROYER-I]
+              [(Battleship? (Player-ship-selection (first (World-players aWorld)))) BATTLESHIP-I]
+              [(Aircraft-Car? (Player-ship-selection (first (World-players aWorld)))) ACC-I])]
+        [else
+         (cond[(Patrol? (Player-ship-selection (first (World-players aWorld)))) (rotate 90 PATROL-I)]
+              [(Sub? (Player-ship-selection (first (World-players aWorld)))) (rotate 90 SUB-I)]
+              [(Destroyer? (Player-ship-selection (first (World-players aWorld)))) (rotate 90 DESTROYER-I)]
+              [(Battleship? (Player-ship-selection (first (World-players aWorld)))) (rotate 90 BATTLESHIP-I)]
+              [(Aircraft-Car? (Player-ship-selection (first (World-players aWorld)))) (rotate 90 ACC-I)])]))
+
+
+
+
+
+;; place-ship: Player -> [listof Ship]
+;; Consumes: Player
+;; Produces: [listof Ship] with a ship placed with the proper [listof Coordinates] added
+(define (place-ship aPlayer)
+  (cond[(Patrol? (Player-ship-selection aPlayer)) 
+        (cons (make-Patrol (determine-coordinates)) (Player-ships aPlayer))]
+       [(Sub? (Player-ship-selection aPlayer)) 
+        (cons (make-Sub (determine-coordinates)) (Player-ships aPlayer))]
+       [(Destroyer? (Player-ship-selection aPlayer)) 
+        (cons (make-Destroyer (determine-coordinates)) (Player-ships aPlayer))]
+       [(Battleship? (Player-ship-selection aPlayer)) 
+        (cons (make-Battleship (determine-coordinates)) (Player-ships aPlayer))]
+       [(Aircraft-Car? (Player-ship-selection aPlayer)) 
+        (cons (make-Aircraft-Car (determine-coordinates)) (Player-ships aPlayer))]))
+
+(check-expect (first (place-ship PLAYER1)) (make-Sub (list "A3" "A2" "A1")))
+
+(define PLACE-X 205)
+(define PLACE-Y 62)
+
+
+;; ship-placement-keyhandler: World Ship-KeyEvent -> World
+;; Consumes: a World and KeyEvents related to the placement of ship on to the grid
+;; Produces: an updated World
+(define (ship-placement-keyhandler aWorld aSKE)
+  (local[(define temp 0)
+         (define animage ST-SIZE-3)]
+    (cond[(key=? aSKE "up") (cond[(>= 62 (- PLACE-Y 50))
+                                  (begin (set! PLACE-Y (- 463 (image-height PLACE-BOX))) aWorld)]
+                                 [else
+                                  (begin (set! PLACE-Y (- PLACE-Y 50)) aWorld)])]
+         [(key=? aSKE "down") (cond[(<= 463 (+ 50 (+ PLACE-Y (image-height PLACE-BOX))))
+                                    (begin (set! PLACE-Y 62) aWorld)]
+                                   [else (begin (set! PLACE-Y (+ PLACE-Y 50)) aWorld)])]
+         [(key=? aSKE "right") (cond[(<= 606 (+ PLACE-X 50 (image-width PLACE-BOX)))
+                                     (begin (set! PLACE-X 205) aWorld)]
+                                    [else (begin (set! PLACE-X (+ PLACE-X 50)) aWorld)])]
+         [(key=? aSKE "left") (cond[(>= 205 (- PLACE-X 50))
+                                    (begin (set! PLACE-X (- 606 (image-width PLACE-BOX))) aWorld)]
+                                   [else (begin (set! PLACE-X (- PLACE-X 50)) aWorld)])]
+         [(key=? aSKE "o")
+          (begin (set! PLACE-BOX (rectangle (image-height PLACE-BOX) (image-width PLACE-BOX) "solid" "orangered")) aWorld)]
+         [(key=? aSKE "p")
+          (begin (set! PLACE-BOX ST-SIZE-2) 
+                 (make-World (World-player-turn aWorld) 
+                             (list (make-Player (Player-ships (first (World-players aWorld))) 
+                                                (Player-unplaced-ships (first (World-players aWorld))) 
+                                                EX-PATROL1
+                                                (Player-hits (first (World-players aWorld))) 
+                                                (Player-misses (first (World-players aWorld))))
+                                   (second (World-players aWorld)))))]
+         [(key=? aSKE "s")
+          (begin (set! PLACE-BOX ST-SIZE-3)
+                 (make-World (World-player-turn aWorld) 
+                             (list (make-Player (Player-ships (first (World-players aWorld))) 
+                                                (Player-unplaced-ships (first (World-players aWorld))) 
+                                                EX-SUB1
+                                                (Player-hits (first (World-players aWorld))) 
+                                                (Player-misses (first (World-players aWorld))))
+                                   (second (World-players aWorld)))))]
+         [(key=? aSKE "d")
+          (begin (set! PLACE-BOX ST-SIZE-3)
+                 (make-World (World-player-turn aWorld) 
+                             (list (make-Player (Player-ships (first (World-players aWorld))) 
+                                                (Player-unplaced-ships (first (World-players aWorld))) 
+                                                EX-DESTROYER1
+                                                (Player-hits (first (World-players aWorld))) 
+                                                (Player-misses (first (World-players aWorld))))
+                                   (second (World-players aWorld)))))]
+         [(key=? aSKE "b")
+          (begin (set! PLACE-BOX ST-SIZE-4)
+                 (make-World (World-player-turn aWorld) 
+                             (list (make-Player (Player-ships (first (World-players aWorld))) 
+                                                (Player-unplaced-ships (first (World-players aWorld))) 
+                                                EX-BATTLESHIP1
+                                                (Player-hits (first (World-players aWorld))) 
+                                                (Player-misses (first (World-players aWorld))))
+                                   (second (World-players aWorld)))))]
+         [(key=? aSKE "a")
+          (begin (set! PLACE-BOX ST-SIZE-5)
+                 (make-World (World-player-turn aWorld) 
+                             (list (make-Player (Player-ships (first (World-players aWorld))) 
+                                                (Player-unplaced-ships (first (World-players aWorld))) 
+                                                EX-AIRCRAFT-CAR1
+                                                (Player-hits (first (World-players aWorld))) 
+                                                (Player-misses (first (World-players aWorld))))
+                                   (second (World-players aWorld)))))]
+         [(key=? aSKE "7")
+          (cond[(and (ships-left? (first (World-players aWorld))) (can-place? (first (World-players aWorld))))
+          (begin (set! GAME-GUI 
+                       (place-image/align (get-shipimage aWorld) PLACE-X PLACE-Y "left" "top" GAME-GUI)) 
+                 (make-World (World-player-turn aWorld) 
+                             (list (make-Player (place-ship (first (World-players aWorld))) 
+                                                (remove-ship (first (World-players aWorld))) 
+                                                (Player-ship-selection (first (World-players aWorld)))
+                                                (Player-hits (first (World-players aWorld))) 
+                                                (Player-misses (first (World-players aWorld))))
+                                   (second (World-players aWorld)))))]
+               [else aWorld])]
+         [else aWorld]))) 
+
+(check-expect (ship-placement-keyhandler GAME-WORLD "up") GAME-WORLD)
+(check-expect (ship-placement-keyhandler GAME-WORLD "down") GAME-WORLD)
+(check-expect (ship-placement-keyhandler GAME-WORLD "left") GAME-WORLD)
+(check-expect (ship-placement-keyhandler GAME-WORLD "right") GAME-WORLD)
+
+#|
+(check-expect (ship-placement-keyhandler GAME-WORLD "p") GAME-WORLD)
+(check-expect (ship-placement-keyhandler GAME-WORLD "s") GAME-WORLD)
+(check-expect (ship-placement-keyhandler GAME-WORLD "d") GAME-WORLD)
+(check-expect (ship-placement-keyhandler GAME-WORLD "b") GAME-WORLD)
+(check-expect (ship-placement-keyhandler GAME-WORLD "a") GAME-WORLD)
+(check-expect (ship-placement-keyhandler GAME-WORLD "o") GAME-WORLD)
+(check-expect (ship-placement-keyhandler GAME-WORLD "l") GAME-WORLD)
+|#
+
+
+
+;;------------------------[FUNCTIONS]--------------------------
+
+
+
+;; battle-keyhandler: World KeyEvent -> World
+;; Consumes: a World and KeyEvents related to the targeting of ships
+;; Produces: an updated World
+
+
+
+;;-------------------------------------------------------------
+
+
+
+;;------------------------[GUI-FUNCTIONS]--------------------------
+
+
+
+;; ship-count: (X -> boolean) [listof Ship] -> number
+;; Consumes: a (X -> boolean) f and a [listof Ship]
+;; Produces: a number indicating the number of Submarines in the list
+(define (ship-count f aLoS)
+  (foldr (lambda (aship total) (cond[(f aship) (+ 1 total)]
+                                    [else total]))
+         0
+         aLoS))
+
+
+
+;; patrol-count: [listof Ship] -> number
+;; Consumes: [listof Ship]
+;; Produces: a number indicating the number of patrol ships the list has
+(define (patrol-count aLoS) (ship-count Patrol? aLoS))
+
+(check-expect (patrol-count (list EX-PATROL1 EX-SUB1 EX-BATTLESHIP1)) 1)
+(check-expect (patrol-count (list EX-PATROL1 EX-PATROL1 EX-BATTLESHIP1)) 2)
+(check-expect (patrol-count (list EX-SUB1 EX-BATTLESHIP1)) 0)
+
+
+;; sub-count:[listof Ship]-> number
+;; Consumes:[listof Ship]
+;; Produces: a number indicating the number of Subs the list has
+(define (sub-count aLoS) (ship-count Sub? aLoS))
+
+(check-expect (sub-count (list EX-PATROL1 EX-SUB1 EX-BATTLESHIP1)) 1)
+(check-expect (sub-count (list EX-PATROL1 EX-PATROL1 EX-BATTLESHIP1)) 0)
+(check-expect (sub-count (list EX-SUB1 EX-SUB1)) 2)
+
+
+;; destroyer-count: [listof Ship] -> number
+;; Consumes: [listof Ship]
+;; Produces: a number indicating the number of destroyer ships the list has
+(define (destroyer-count aLoS) (ship-count Destroyer? aLoS))
+
+(check-expect (destroyer-count (list EX-PATROL1 EX-DESTROYER1 EX-DESTROYER1)) 2)
+(check-expect (destroyer-count (list EX-PATROL1 EX-PATROL1 EX-BATTLESHIP1)) 0)
+(check-expect (destroyer-count (list EX-DESTROYER1 EX-SUB1)) 1)
+
+
+;; battleship-count: [listof Ship] -> number
+;; Consumes: [listof Ship]
+;; Produces: a number indicating the number of battleships ships the list has
+(define (battleship-count aLoS) (ship-count Battleship? aLoS))
+
+(check-expect (battleship-count (list EX-PATROL1 EX-DESTROYER1 EX-DESTROYER1)) 0)
+(check-expect (battleship-count (list EX-PATROL1 EX-PATROL1 EX-BATTLESHIP1)) 1)
+
+
+;; aircraft-count: [listof Ship] -> number
+;; Consumes: [listof Ship]
+;; Produces: a number indicating the number of aircraft-carrier ships the list has
+(define (aircraft-count aLoS) (ship-count Aircraft-Car? aLoS))
+
+(check-expect (aircraft-count (list EX-PATROL1 EX-DESTROYER1 EX-AIRCRAFT-CAR1)) 1)
+(check-expect (aircraft-count (list EX-PATROL1 EX-PATROL1 EX-BATTLESHIP1)) 0)
+
+
+;; get-hit/miss: [Listof Coordinate] -> image
+;; Consumes: a [Listof Coordinate]
+;; Produces: The the text of the coordinates placed on top of each other
+(define (get-hit/miss aLoC)
+  (cond[(empty? aLoC) (text "" 12 "black")]
+       [else
+  (foldl (lambda (x list) (above list (text x 12 "black"))) (text (first aLoC) 12 "black") (rest aLoC))]))
+
+(check-expect (get-hit/miss (list "D1" "D2" "D3")) (above (text "D1" 12 "black")
+                                                          (text "D2" 12 "black")
+                                                          (text "D3" 12 "black")))
+(check-expect (get-hit/miss empty) (text "" 12 "black"))
+
+
+
+;;------------------------[GUI RENDER]--------------------------
+
+(define COUNT-NUMX 120)
+(define COUNT-NUMY 370)
+
+
+
+
+;; render-GUI: aWorld -> Image
+;; Consumes: a World
+;; Produces: an Image of the GUI for player 1
+(define (render-GUI aWorld)
+  (cond[(game-begin? (Player-unplaced-ships (first (World-players aWorld))) 
+                     (Player-unplaced-ships (second (World-players aWorld))))
+        (render-battleGUI aWorld)]
+       [else (render-selectionGUI aWorld)]))
+        
+
+
+;; render-selectionGUI: aWorld -> Image
+;; Consumes: a World
+;; Produces: an Image of the GUI for player 1
+(define (render-selectionGUI aWorld)
+  (begin 
+    (set! GAME-GUI 
+          (place-image/align (get-hit/miss (Player-hits (first (World-players aWorld))))
+                             25 125
+                             "left" "top"
+                             (place-image/align (get-hit/miss (Player-misses (first (World-players aWorld))))
+                                                125 125
+                                                "left" "top"
+                                                GAME-GUI)))
+          (place-image/align PLACE-BOX
+                           PLACE-X PLACE-Y
+                           "left" "top"
+                           (place-image (text (number->string (patrol-count (Player-unplaced-ships (first (World-players aWorld))))) 
+                                              12 
+                                              "black")
+                                              COUNT-NUMX 
+                                              COUNT-NUMY
+                                              (place-image (text (number->string (sub-count (Player-unplaced-ships (first (World-players aWorld))))) 
+                                                                 12 
+                                                                 "black")
+                                                           COUNT-NUMX 
+                                                           (+ COUNT-NUMY 20)
+                                                           (place-image (text (number->string (battleship-count (Player-unplaced-ships (first (World-players aWorld))))) 
+                                                                              12 
+                                                                              "black")
+                                                                        COUNT-NUMX 
+                                                                        (+ COUNT-NUMY 40)
+                                                                        (place-image (text (number->string (destroyer-count (Player-unplaced-ships (first (World-players aWorld))))) 
+                                                                                           12 
+                                                                                           "black")
+                                                                                     COUNT-NUMX 
+                                                                                     (+ COUNT-NUMY 60)
+                                                                                     (place-image (text (number->string (aircraft-count (Player-unplaced-ships (first (World-players aWorld))))) 
+                                                                                                        12 
+                                                                                                        "black")
+                                                                                                  COUNT-NUMX 
+                                                                                                  (+ COUNT-NUMY 80)
+                                                                                                  GAME-GUI))))))))
+                           
+
+;; render-battleGUI: aWorld -> Image
+;; Consumes: a World
+;; Produces: an Image of the GUI for player 1
+(define (render-battleGUI aWorld)
+          (place-image/align (get-hit/miss (Player-hits (first (World-players aWorld))))
+                             25 125
+                             "left" "top"
+                             (place-image/align (get-hit/miss (Player-misses (first (World-players aWorld))))
+                                                125 125
+                                                "left" "top"
+                                               
+                           (place-image (text (number->string (patrol-count (Player-ships (first (World-players aWorld))))) 
+                                              12 
+                                              "black")
+                                              COUNT-NUMX 
+                                              COUNT-NUMY
+                                              (place-image (text (number->string (sub-count (Player-ships (first (World-players aWorld))))) 
+                                                                 12 
+                                                                 "black")
+                                                           COUNT-NUMX 
+                                                           (+ COUNT-NUMY 20)
+                                                           (place-image (text (number->string (battleship-count (Player-ships (first (World-players aWorld))))) 
+                                                                              12 
+                                                                              "black")
+                                                                        COUNT-NUMX 
+                                                                        (+ COUNT-NUMY 40)
+                                                                        (place-image (text (number->string (destroyer-count (Player-ships (first (World-players aWorld))))) 
+                                                                                           12 
+                                                                                           "black")
+                                                                                     COUNT-NUMX 
+                                                                                     (+ COUNT-NUMY 60)
+                                                                                     (place-image (text (number->string (aircraft-count (Player-ships (first (World-players aWorld))))) 
+                                                                                                        12 
+                                                                                                        "black")
+                                                                                                  COUNT-NUMX 
+                                                                                                  (+ COUNT-NUMY 80)
+                                                                                                  GAME-GUI))))))))
+                           
+                           
+                           
+(define (test-game aWorld) 
+  (big-bang
+   aWorld
+   (on-draw render-GUI)
+   (on-key ship-placement-keyhandler)
+   ))
+
+
+
