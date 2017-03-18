@@ -1,6 +1,6 @@
 ;; The first three lines of this file were inserted by DrRacket. They record metadata
 ;; about the language level of this file in a form that our tools can easily process.
-#reader(lib "htdp-advanced-reader.ss" "lang")((modname battle-ship-GUI) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #t #t none #f ())))
+#reader(lib "htdp-advanced-reader.ss" "lang")((modname battle-ship-GUI) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #t #t none #f () #f)))
 (require racket/base)
 (require 2htdp/image)
 
@@ -100,8 +100,11 @@
 (define D9 (text "b= battleship" 12 "black"))
 (define D10 (text "a= aircraft-destroyer" 12 "black"))
 (define D11 (text "Press enter to place the ship" 12 "black"))
+(define D12 (text "Press \"o\" to change ship" 12 "black"))
+(define D13 (text "orientation" 12 "black"))
 
-(define SELECTION-D (above D1 D2 D3 D4 D5 D6 D7 D8 D9 D9 D10 D11))
+
+(define SELECTION-D (above D1 D2 D3 D4 D5 D6 D7 D8 D9 D10 D11 D12 D13))
 
 (define S (text "" 12 "black"))
 (define B1 (text "Enter a coordinate into the" 12 "black")) 

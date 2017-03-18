@@ -1,11 +1,12 @@
-# Battleship Game Clone 
+# Battleship Racket Clone 
 
-This was the final project for CISC108: Inroduction to Computer Science.
+This is the final project from the Fall 2013 UDel CISC108: Intro
+to Computer Science I course.
 
-## How to play
+## How to Run:
+1. Download Racket from: [https://racket-lang.org/](https://racket-lang.org/)
+2. Clone or Download this repo and double-click the "Battleship.rkt" file
+3. Click the "Run" button when the file loads into DrRacket
 
-1. This project requires the Dr.Racket environment in order to run.
-2. In the console, type: 
-    ```scheme
-        (test-Game)
-    ```
+![battleship-screenshot](./game-screenshot.PNG)
+
